@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DEBUG=True
+      - DJANGO_DB_HOST=db
+    networks:
+      - danphe-net
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: nepal
+      POSTGRES_PASSWORD: nepal123
+      POSTGRES_DB: nepal
+    ports:
+      - "5432:5432"
+    networks:
+      - danphe-net
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - danphe-net
+
+networks:
+  danphe-net:
