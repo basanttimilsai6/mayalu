@@ -1,9 +1,10 @@
 from rest_framework import serializers
-from .models import User, UserProfile,Hobby
+from userprofile.models import User, UserProfile,Hobby,OTP
 
-class OTPLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    country_code = serializers.CharField(max_length=5)
+class OTPLoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OTP
+        fields = ['user', 'code']
 
 class HobbySerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,3 +22,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'gender', 'nickname', 'profile_image', 'phone_number', 
             'date_of_birth', 'social_media_links'
         ]
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['email', 'username', 'country_code', 'password', 'is_active', 'is_staff']
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)

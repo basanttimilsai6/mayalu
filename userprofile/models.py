@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager,Permiss
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.conf import settings
 
 
 # Custom User Manager
@@ -29,7 +30,7 @@ class User(AbstractBaseUser,PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=100,null=True, blank=True)
     password = models.CharField(max_length=100,null=True, blank=True)
-    country_code = models.CharField(max_length=5)
+    country_code = models.CharField(max_length=5,null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -70,10 +71,20 @@ class Hobby(models.Model):
     def __str__(self):
         return self.name
 
+
+class OTP(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="otp")
+    code = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.code
+
+
+
 class UserProfile(models.Model):
     GENDER_CHOICES = [("M", "Male"), ("F", "Female"), ("O", "Other")]
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     full_name = models.CharField(max_length=100)
     hobbies = models.ManyToManyField(
         'Hobby', 

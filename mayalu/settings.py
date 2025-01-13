@@ -148,6 +148,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+AUTH_USER_MODEL = 'userprofile.User'
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -199,3 +200,5 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=300),  # Set a very long expiry for access token (e.g., 10 years)
     'REFRESH_TOKEN_LIFETIME': timedelta(days=600),  # Optionally set for refresh token as well
 }
+
+

@@ -5,33 +5,51 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from userprofile.models import User, UserProfile,Hobby
-from userprofile.serializers import OTPLoginSerializer, UserProfileSerializer,HobbySerializer
+from userprofile.models import User, UserProfile,Hobby,OTP
+from userprofile.serializers import OTPLoginSerializer, UserProfileSerializer,HobbySerializer,UserSerializer
 from django.utils.crypto import get_random_string
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import viewsets
-
+from django.contrib.auth import get_user_model
 
 
 # View to handle OTP login
 class OTPLoginView(APIView):
-    serializer_class = OTPLoginSerializer
-
 
     def post(self, request):
-        serializer = OTPLoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data["email"]
-        country_code = serializer.validated_data["country_code"]
-        # Generate OTP
-        otp = get_random_string(length=6, allowed_chars='0123456789')
-        # Store OTP in session (or use a caching mechanism like Redis)
-        request.session["otp"] = otp
+        email = request.data.get("email")
+        country_code = request.data.get("country_code")
+
+        if not email or not country_code:
+            return Response(
+                {"error": "Email and country code are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Generate a 6-digit OTP code
+        otp_code = get_random_string(length=6, allowed_chars='0123456789')
+
+        try:
+            # Attempt to find the user by email
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # If the user doesn't exist, create a new one
+            user = User.objects.create(email=email, country_code=country_code)
+
+        # Update or create the OTP for the user
+        try:
+            otp = OTP.objects.get(user=user)
+            otp.code = otp_code
+            otp.save()
+        except OTP.DoesNotExist:
+            OTP.objects.create(user=user, code=otp_code)
+
+        request.session["otp"] = otp_code
         request.session["email"] = email
         request.session["country_code"] = country_code
-        print(otp)
+        print(otp_code)
         html_content = f"""
         <!DOCTYPE html>
         <html lang="en">
@@ -95,7 +113,7 @@ class OTPLoginView(APIView):
                 <h2>OTP Verification</h2>
                 <p>Dear User,</p>
                 <p>Your one-time password (OTP) for login is:</p>
-                <div class="otp-code">{otp}</div>
+                <div class="otp-code">{otp_code}</div>
                 <p>Please use this OTP to complete your login. It will expire in <strong>5 minutes</strong>.</p>
                 <hr>
                 <p>If you did not request this, please ignore this email or contact support.</p>
@@ -110,7 +128,7 @@ class OTPLoginView(APIView):
         # Send the email
         send_mail(
             subject='OTP Code',
-            message='Your OTP code is {otp}. It will expire in 5 minutes.',  # Fallback message
+            message='Your OTP code is {otp_code}. It will expire in 5 minutes.',  # Fallback message
             from_email='viewaworld6@gmail.com',  # From email
             recipient_list=[email],  # To email
             html_message=html_content,  # HTML content
@@ -119,36 +137,47 @@ class OTPLoginView(APIView):
         return Response({"message": "OTP sent successfully!"}, status=status.HTTP_200_OK)
 
 class VerifyOTPView(APIView):
-
     def post(self, request):
         otp = request.data.get("otp")
         email = request.session.get("email")
         session_otp = request.session.get("otp")
         country_code = request.session.get("country_code")
 
+        # Ensure OTP and email exist in the session before verifying
+        if not otp:
+            return Response({"error": "OTP is required!"}, status=status.HTTP_400_BAD_REQUEST)
+        if not email:
+            return Response({"error": "Email is missing!"}, status=status.HTTP_400_BAD_REQUEST)
+        if not session_otp:
+            return Response({"error": "Session OTP is missing!"}, status=status.HTTP_400_BAD_REQUEST)
+        if not country_code:
+            return Response({"error": "Country code is missing!"}, status=status.HTTP_400_BAD_REQUEST)
+
         print(f"Received OTP: {otp}")
         print(f"Stored OTP: {session_otp}")
         print(f"Email: {email}")
         print(f"Country Code: {country_code}")
 
-        # Check if the country_code is None or empty
-        if not country_code:
-            return Response({"error": "Country code is missing!"}, status=status.HTTP_400_BAD_REQUEST)
+        # Check if the received OTP matches the session OTP
+        if otp != session_otp:
+            return Response({"error": "Invalid OTP!"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if otp == session_otp:
-            try:
-                user = User.objects.get(email=email)
-                refresh = RefreshToken.for_user(user)
-                access_token = str(refresh.access_token)
-                return Response({"message": "OTP verified successfully",'refresh': str(refresh),'access': str(access_token),}, status=status.HTTP_200_OK)
-            except ObjectDoesNotExist:
-                # Create user with email and country_code
-                user = User.objects.create(email=email, country_code=country_code,is_active=True)
-                user.save()
-                refresh = RefreshToken.for_user(user)
-                access_token = str(refresh.access_token)
-                return Response({"message": "User created and logged in!",'refresh': str(refresh),'access': str(access_token),}, status=status.HTTP_200_OK)
-        return Response({"error": "Invalid OTP!"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            # Get the user associated with the OTP
+            user = User.objects.get(email=email)
+            print(user)
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            return Response(
+                {
+                    "message": "OTP verified successfully",
+                    'refresh': str(refresh),
+                    'access': access_token,
+                },
+                status=status.HTTP_200_OK
+            )
+        except ObjectDoesNotExist:
+            return Response({"error": "Invalid OTP!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
