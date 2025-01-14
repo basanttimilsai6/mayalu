@@ -43,5 +43,5 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/shorts/', include('shorts.urls')),
     path('api/userprofile/', include('userprofile.urls')),
-    # path('api/chatapp/', include('chatapp.urls')),
+    path('api/chatapp/', include('chatapp.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

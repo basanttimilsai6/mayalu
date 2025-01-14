@@ -2,7 +2,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from .models import Room, Message
-from django.contrib.auth.models import User
+from userprofile.models import User
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -16,12 +16,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
         query_dict = dict(param.split('=') for param in query_params.split('&') if '=' in param)
         user_email = query_dict.get('email')  # User email sent in query params
 
+        query_params = self.scope["query_string"].decode("utf-8")
+        print("Query String:", query_params)
+        query_dict = dict(param.split('=') for param in query_params.split('&') if '=' in param)
+        print("Query Dict:", query_dict)
+        user_email = query_dict.get('email')
+        print("User  Email:", user_email)
+
         # Check if room exists
         room = await self.get_room(self.room_name)
         if not room:
             print(f"Room does not exist: {self.room_name}")
             await self.close()  # Reject connection if room doesn't exist
             return
+        print(user_email)
 
         # Check if the user is associated with the room
         if not await self.is_user_in_room(user_email, room):
