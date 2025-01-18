@@ -15,9 +15,23 @@ class YouTubeShortsByHobbyView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = YouTubeShortSerializer
 
-    def fetch_videos(self, query,limit):
+    def fetch_videos(self, query, limit):
         video_search = VideosSearch(query, limit=limit)  # Reduced limit to speed up
         results = video_search.result()['result']
+        
+        # Define a helper function to convert duration to seconds
+        def parse_duration(duration_str):
+            if not duration_str:
+                return None
+            parts = duration_str.split(":")
+            if len(parts) == 1:  # Format: SS
+                return int(parts[0])
+            elif len(parts) == 2:  # Format: MM:SS
+                return int(parts[0]) * 60 + int(parts[1])
+            elif len(parts) == 3:  # Format: HH:MM:SS (unlikely for Shorts)
+                return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+            return None
+
         return [
             {
                 'input': query,
@@ -25,13 +39,15 @@ class YouTubeShortsByHobbyView(APIView):
                 'duration': vid['duration'],
                 'thumbnail': vid['thumbnails'][0]['url'],
                 'channel': vid['channel']['name'],
-                'link': vid['link'],
+                'link': f"https://www.youtube.com/shorts/{vid['id']}",  # Convert to Shorts link format
                 'views': vid['viewCount']['short'],
                 'published': vid['publishedTime'],
                 'description': ''.join([snip['text'] for snip in vid['descriptionSnippet']]) if vid.get('descriptionSnippet') else ''
             }
             for vid in results
+            if parse_duration(vid['duration']) and parse_duration(vid['duration']) <= 60  # Only include videos under 60 seconds
         ]
+
 
     def get(self, request, format=None):
         try:
@@ -80,3 +96,5 @@ class YouTubeShortsByHobbyView(APIView):
             return Response({
                 'error':'Something went wrong..'
             })
+
+
