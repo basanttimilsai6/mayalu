@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
 class RoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
-        fields = ('id', 'name', 'slug')
+        fields = ('id', 'name')
 
 class MessageSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

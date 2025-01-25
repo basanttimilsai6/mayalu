@@ -1,5 +1,6 @@
 from chatapp.views.friend_req import (
-    FriendRequestView
+    FriendRequestView,
+    FriendRequestUpdate
 )
 
 from chatapp.views.views import (
@@ -10,5 +11,6 @@ from chatapp.views.views import (
 
 __all__ = [
     FriendRequestView,
-    RoomView
+    RoomView,
+    FriendRequestUpdate
 ]

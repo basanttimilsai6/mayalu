@@ -7,4 +7,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 admin.site.register(UserProfile, UserProfileAdmin)
 admin.site.register(Hobby)
 admin.site.register(OTP)
-admin.site.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ('id', 'username') 
+admin.site.register(User, UserAdmin)
+
