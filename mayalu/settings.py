@@ -142,6 +142,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+key = 'udlc6-zk(pyf=2k7t2q=%tvn!-x@59b8=yqnf1^$!atpw-r'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/

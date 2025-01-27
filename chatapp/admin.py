@@ -5,7 +5,7 @@ class RoomAdmin(admin.ModelAdmin):
     list_display = ('id','name')
 
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user')  # Include any other fields you'd like to display
+    list_display = ('id', 'user','date_added')  # Include any other fields you'd like to display
 
 
 class FriendRequestAdmin(admin.ModelAdmin):
